@@ -1,26 +1,13 @@
-<p align="center">
-  <a href="https://github.com/autunn/NasWebhook">
-    <img src="https://raw.githubusercontent.com/autunn/NasWebhook/main/logo.png" width="180" alt="NasWebhook Logo" />
-  </a>
-</p>
+# NasWebhook
 
-<p align="center">
-  <h2 align="center">NasWebhook</h2>
-  <p align="center">连接各类品牌 NAS 与 企业微信的通用化消息桥梁</p>
-</p>
+![NasWebhook Logo](https://raw.githubusercontent.com/autunn/NasWebhook/main/logo.png)
 
-<p align="center">
-  <a href="https://github.com/autunn/NasWebhook">
-    <img src="https://img.shields.io/badge/GitHub-Source%20Code-000000?style=flat-square&logo=github" alt="GitHub" />
-  </a>
-  <a href="https://hub.docker.com/r/autunn/nas-webhook">
-    <img src="https://img.shields.io/docker/pulls/autunn/nas-webhook?style=flat-square&logo=docker&color=0db7ed" alt="Docker Pulls" />
-  </a>
-  <a href="https://hub.docker.com/r/autunn/nas-webhook">
-    <img src="https://img.shields.io/docker/image-size/autunn/nas-webhook/latest?style=flat-square&logo=docker" alt="Docker Image Size" />
-  </a>
-  <img src="https://img.shields.io/badge/License-MIT-2ecc71?style=flat-square" alt="License" />
-</p>
+> **连接各类品牌 NAS 与 企业微信的通用化消息桥梁**
+
+[![GitHub Source](https://img.shields.io/badge/GitHub-Source%20Code-000000?style=flat-square&logo=github)](https://github.com/autunn/NasWebhook)
+[![Docker Pulls](https://img.shields.io/docker/pulls/autunn/nas-webhook?style=flat-square&logo=docker&color=0db7ed)](https://hub.docker.com/r/autunn/nas-webhook)
+[![Docker Image Size](https://img.shields.io/docker/image-size/autunn/nas-webhook/latest?style=flat-square&logo=docker)](https://hub.docker.com/r/autunn/nas-webhook)
+[![License](https://img.shields.io/badge/License-MIT-2ecc71?style=flat-square)](https://github.com/autunn/NasWebhook/blob/main/LICENSE)
 
 ---
 
@@ -28,10 +15,10 @@
 
 ## 🛠️ 特性 (Features)
 
-- **品牌通用**：适配所有支持自定义 JSON Webhook 的系统。
-- **可视化后台**：内置 Web 管理界面，轻松配置企业微信参数。
+- **品牌通用**：适配所有支持自定义 JSON Webhook 的系统（如绿联、群晖、极空间等）。
+- **可视化后台**：内置 Web 界面，轻松配置企业微信参数。
 - **多架构支持**：支持 Docker 多架构（amd64/arm64）自动构建。
-- **个性化封面**：支持接入随机动漫图片 API。
+- **个性化封面**：支持接入随机动漫图片 API（如 Webhook 页面中可配置）。
 
 ## 🚀 快速启动
 
