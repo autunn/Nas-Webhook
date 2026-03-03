@@ -1,29 +1,17 @@
-# 阶段一：编译环境
+# Stage 1: Build
 FROM golang:1.21-alpine AS builder
-
 WORKDIR /app
-
 RUN apk add --no-cache git
-
 COPY . .
+RUN go mod init nas-webhook && go mod tidy
+RUN CGO_ENABLED=0 GOOS=linux go build -o nas-webhook-app .
 
-ENV GOPROXY=https://proxy.golang.org,direct
-RUN go mod tidy
-
-# 编译为 nas-webhook
-RUN CGO_ENABLED=0 GOOS=linux go build -o nas-webhook .
-
-# 阶段二：运行环境
+# Stage 2: Run
 FROM alpine:latest
-
 WORKDIR /app
-
 RUN apk add --no-cache ca-certificates tzdata
-
-COPY --from=builder /app/nas-webhook .
+COPY --from=builder /app/nas-webhook-app .
 COPY templates ./templates
-
 EXPOSE 5080
 VOLUME ["/app/data"]
-
-CMD ["./nas-webhook"]
+CMD ["./nas-webhook-app"]

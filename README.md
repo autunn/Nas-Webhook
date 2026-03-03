@@ -14,34 +14,19 @@
   <a href="https://hub.docker.com/r/autunn/nas-webhook">
     <img src="https://img.shields.io/docker/pulls/autunn/nas-webhook?style=flat-square&logo=docker&color=0db7ed" />
   </a>
-  <a href="https://hub.docker.com/r/autunn/nas-webhook">
-    <img src="https://img.shields.io/docker/image-size/autunn/nas-webhook?style=flat-square&logo=docker" />
-  </a>
   <img src="https://img.shields.io/badge/License-MIT-2ecc71?style=flat-square" />
 </p>
 
+## 简介
+NAS Webhook 是一个轻量级工具，支持将各品牌 NAS (如 UGREEN UGOS Pro, Synology, QNAP) 的系统通知转发至企业微信应用。
 
-## 简介 (Introduction)
-
-[cite_start]NAS Webhook 是一个用于将各类 NAS (如 UGREEN UGOS Pro, Synology, QNAP 等) 消息推送到企业微信的 Webhook 服务 [cite: 21, 25]。
-
-## 特性 (Features)
-
-- [cite_start]**精美 UI**：响应式管理后台，配置简单直观 。
-- [cite_start]**安全验证**：支持自定义管理员密码与企业微信回调签名验证 。
-- [cite_start]**多架构支持**：适配主流 NAS 环境 [cite: 21]。
-- [cite_start]**图文通知**：支持带图片、标题和跳转链接的微信卡片消息 。
-
-## 快速启动 (Quick Start)
-
-### Docker CLI
-
+## 快速启动
 ```bash
 docker run -d \
   --name nas-webhook \
   -p 5080:5080 \
   -v $(pwd)/data:/app/data \
-  -e ADMIN_PASSWORD=这里填你的强密码 \
+  -e ADMIN_PASSWORD=你的强密码 \
   --restart always \
   autunn/nas-webhook:latest
 ```
