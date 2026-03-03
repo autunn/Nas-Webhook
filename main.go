@@ -14,7 +14,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url" // 新增：用于解析代理 URL
+	"net/url" // 关键：用于解析代理协议
 	"os"
 	"sort"
 	"strconv"
@@ -41,7 +41,7 @@ var (
 	accessToken          string
 	accessTokenExpiresAt int64
 	sessionToken         string
-	Version              = "v5.0.0-Compatible" // 版本升级
+	Version              = "v5.0.0-Final"
 )
 
 func init() {
@@ -54,13 +54,20 @@ func main() {
 	_ = os.MkdirAll("data", 0755)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+
+	// 1. 模板与静态资源配置
 	r.LoadHTMLGlob("templates/*")
+	// 修复：显式映射根目录的 logo.png，确保网页能正常显示
+	r.StaticFile("/logo.png", "./logo.png")
+	// 如果你还有其他静态文件，可以保留这个映射
+	r.Static("/static", "./static")
 
 	adminPass := os.Getenv("ADMIN_PASSWORD")
 	if adminPass == "" {
 		adminPass = "admin"
 	}
 
+	// 2. 身份验证路由
 	r.GET("/login", func(c *gin.Context) {
 		if checkCookie(c) {
 			c.Redirect(http.StatusFound, "/")
@@ -83,9 +90,11 @@ func main() {
 		c.Redirect(http.StatusFound, "/login")
 	})
 
+	// 3. Webhook 接口
 	r.GET("/webhook", handleVerify)
 	r.POST("/webhook", handleMessage)
 
+	// 4. 管理后台
 	auth := r.Group("/")
 	auth.Use(authMiddleware())
 	{
@@ -171,17 +180,10 @@ func handleVerify(c *gin.Context) {
 }
 
 func handleMessage(c *gin.Context) {
-	// 超级解析：兼容 URL 传参、Form 提交和 JSON
+	// 超级解析：兼容 URL 传参和 JSON Body
 	data := make(map[string]interface{})
-	
-	// 1. 尝试 URL Query (?text=xxx)
 	if txt := c.Query("text"); txt != "" { data["text"] = txt }
-	if msg := c.Query("message"); msg != "" { data["message"] = msg }
-
-	// 2. 尝试 PostForm
-	if txt := c.PostForm("text"); txt != "" { data["text"] = txt }
-
-	// 3. 尝试 JSON Body
+	
 	var jsonData map[string]interface{}
 	bodyBytes, _ := io.ReadAll(c.Request.Body)
 	if len(bodyBytes) > 0 {
@@ -192,7 +194,7 @@ func handleMessage(c *gin.Context) {
 	if len(data) > 0 {
 		conf := loadConfig()
 		if conf.Configured {
-			log.Printf("[Webhook] 收到有效请求，内容: %v", data)
+			log.Printf("[Webhook] 接收到推送数据: %v", data)
 			go pushToWeChat(conf, data)
 		}
 	}
@@ -200,23 +202,23 @@ func handleMessage(c *gin.Context) {
 }
 
 func pushToWeChat(conf Config, data map[string]interface{}) {
-	// 构造支持可选代理的 HTTP Client
+	// 构建支持可选代理的 HTTP Client
 	transport := &http.Transport{}
 	if conf.ProxyURL != "" {
 		proxy, err := url.Parse(conf.ProxyURL)
 		if err == nil {
 			transport.Proxy = http.ProxyURL(proxy)
-			log.Printf("[Proxy] 已配置代理出口: %s", conf.ProxyURL)
+			log.Printf("[Proxy] 代理启用: %s", conf.ProxyURL)
 		}
 	}
-	client := &http.Client{Transport: transport, Timeout: 10 * time.Second}
+	client := &http.Client{Transport: transport, Timeout: 15 * time.Second}
 
 	token := getWeChatToken(conf, client)
 	if token == "" { return }
 
 	content := "NAS 系统通知"
-	if m, ok := data["message"].(string); ok { content = m }
 	if t, ok := data["text"].(string); ok { content = t }
+	if m, ok := data["message"].(string); ok { content = m }
 
 	picURL := conf.PhotoURL
 	if picURL == "" {
@@ -239,13 +241,14 @@ func pushToWeChat(conf Config, data map[string]interface{}) {
 	}
 
 	body, _ := json.Marshal(payload)
-	resp, err := client.Post(fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=%s", token), "application/json", bytes.NewBuffer(body))
+	// 使用带代理逻辑的 client 发送
+	resp, err := client.Post("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token="+token, "application/json", bytes.NewBuffer(body))
 	if err == nil {
 		res, _ := io.ReadAll(resp.Body)
-		log.Printf("[WeChat] 发送结果: %s", string(res))
+		log.Printf("[WeChat] 发送状态: %s", string(res))
 		resp.Body.Close()
 	} else {
-		log.Printf("[WeChat] 网络发送失败: %v", err)
+		log.Printf("[WeChat] 网络故障: %v", err)
 	}
 }
 
@@ -254,25 +257,17 @@ func getWeChatToken(conf Config, client *http.Client) string {
 		return accessToken
 	}
 	resp, err := client.Get(fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=%s&corpsecret=%s", conf.CorpID, conf.CorpSecret))
-	if err != nil { 
-		log.Printf("[Token] 获取失败: %v", err)
-		return "" 
-	}
-	defer resp.Body.Close()
-	
-	var res struct {
-		Token   string `json:"access_token"`
-		Exp     int64  `json:"expires_in"`
-		ErrCode int    `json:"errcode"`
-		ErrMsg  string `json:"errmsg"`
-	}
-	json.NewDecoder(resp.Body).Decode(&res)
-	
-	if res.Token == "" {
-		log.Printf("[Token] 微信返回错误: %s (Code: %d)", res.ErrMsg, res.ErrCode)
+	if err != nil {
+		log.Printf("[Token] 错误: %v", err)
 		return ""
 	}
+	defer resp.Body.Close()
 
+	var res struct {
+		Token string `json:"access_token"`
+		Exp   int64  `json:"expires_in"`
+	}
+	json.NewDecoder(resp.Body).Decode(&res)
 	accessToken = res.Token
 	accessTokenExpiresAt = time.Now().Unix() + res.Exp - 60
 	return accessToken
