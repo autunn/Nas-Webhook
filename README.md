@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/docker/pulls/autunn/nas-webhook?style=flat-square&logo=docker&color=0db7ed" alt="Docker Pulls" />
   </a>
   <a href="https://hub.docker.com/r/autunn/nas-webhook">
-    <img src="https://img.shields.io/docker/image-size/autunn/nas-webhook?style=flat-square&logo=docker" alt="Docker Image Size" />
+    <img src="https://img.shields.io/docker/image-size/autunn/nas-webhook/latest?style=flat-square&logo=docker" alt="Docker Image Size" />
   </a>
   <img src="https://img.shields.io/badge/License-MIT-2ecc71?style=flat-square" alt="License" />
 </p>
