@@ -39,7 +39,7 @@ var (
 	accessToken          string
 	accessTokenExpiresAt int64
 	sessionToken         string
-	Version              = "v4.0.0"
+	Version              = "v4.1.0"
 )
 
 func init() {
@@ -186,8 +186,7 @@ func pushToWeChat(conf Config, data map[string]interface{}) {
 	token := getWeChatToken(conf, baseURL)
 	if token == "" { return }
 
-	// 智能解析内容
-	content := "NAS 系统通知"
+	content := "收到来自 NAS 的通知"
 	if m, ok := data["message"].(string); ok { content = m }
 	if t, ok := data["text"].(string); ok { content = t }
 

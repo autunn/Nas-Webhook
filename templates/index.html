@@ -5,14 +5,13 @@
     <title>NAS Webhook</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { background: #f4f6f9; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        body { background: #f4f6f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
         .container { background: white; padding: 30px; border-radius: 12px; width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { text-align: center; color: #1e293b; margin-top: 0; }
         .group { margin-bottom: 15px; }
         label { display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 5px; }
         input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .footer { text-align: center; font-size: 11px; color: #cbd5e1; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -29,7 +28,6 @@
             <div class="group"><label>NAS 跳转地址</label><input type="text" name="nas_url" value="{{.config.NasURL}}" placeholder="http://..."></div>
             <button type="submit">保存配置</button>
         </form>
-        <div class="footer">NAS Webhook {{.version}}</div>
     </div>
 </body>
 </html>
