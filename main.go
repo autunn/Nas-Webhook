@@ -40,7 +40,8 @@ var (
 	accessToken          string
 	accessTokenExpiresAt int64
 	sessionToken         string
-	Version              = "v4.2.2-Stable"
+	// 基础版本号，会被 GitHub Actions 的标签自动覆盖
+	Version              = "v2.0"
 )
 
 func init() {
@@ -54,7 +55,6 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	// 1. 静态资源映射（确保 Logo 正常显示）
 	r.StaticFile("/logo.png", "./logo.png")
 	r.LoadHTMLGlob("templates/*")
 
@@ -63,7 +63,6 @@ func main() {
 		adminPass = "admin"
 	}
 
-	// 2. 身份验证路由
 	r.GET("/login", func(c *gin.Context) {
 		if checkCookie(c) {
 			c.Redirect(http.StatusFound, "/")
@@ -86,11 +85,9 @@ func main() {
 		c.Redirect(http.StatusFound, "/login")
 	})
 
-	// 3. Webhook 核心路由
 	r.GET("/webhook", handleVerify)
 	r.POST("/webhook", handleMessage)
 
-	// 4. 管理后台
 	auth := r.Group("/")
 	auth.Use(authMiddleware())
 	{
@@ -152,8 +149,6 @@ func handleSave(c *gin.Context) {
 
 func handleVerify(c *gin.Context) {
 	echostr := c.Query("echostr")
-
-	// 兼容：非验证请求但带参数时，直接转交给消息处理逻辑
 	if echostr == "" && (c.Query("text") != "" || c.Query("message") != "" || c.Query("task") != "") {
 		handleMessage(c)
 		return
@@ -169,7 +164,6 @@ func handleVerify(c *gin.Context) {
 	h := sha1.New()
 	h.Write([]byte(strings.Join(params, "")))
 	if fmt.Sprintf("%x", h.Sum(nil)) != msgSig {
-		log.Printf("[Verify] 签名校验失败")
 		c.AbortWithStatus(403)
 		return
 	}
@@ -185,29 +179,19 @@ func handleVerify(c *gin.Context) {
 
 func handleMessage(c *gin.Context) {
 	data := make(map[string]interface{})
-
-	// 合并 URL 参数
 	for k, v := range c.Request.URL.Query() {
-		if len(v) > 0 {
-			data[k] = v[0]
-		}
+		if len(v) > 0 { data[k] = v[0] }
 	}
-
-	// 合并 JSON Body
 	bodyBytes, _ := io.ReadAll(c.Request.Body)
 	if len(bodyBytes) > 0 {
 		var jsonData map[string]interface{}
 		if err := json.Unmarshal(bodyBytes, &jsonData); err == nil {
-			for k, v := range jsonData {
-				data[k] = v
-			}
+			for k, v := range jsonData { data[k] = v }
 		}
 	}
-
 	if len(data) > 0 {
 		conf := loadConfig()
 		if conf.Configured {
-			log.Printf("[Webhook] 触发消息发送: %v", data)
 			go pushToWeChat(conf, data)
 		}
 	}
@@ -216,27 +200,20 @@ func handleMessage(c *gin.Context) {
 
 func pushToWeChat(conf Config, data map[string]interface{}) {
 	baseURL := "https://qyapi.weixin.qq.com"
-	if conf.ProxyURL != "" {
-		baseURL = conf.ProxyURL
-	}
-
+	if conf.ProxyURL != "" { baseURL = conf.ProxyURL }
 	token := getWeChatToken(conf, baseURL)
 	if token == "" { return }
 
-	// 描述构造
 	var description strings.Builder
 	description.WriteString(fmt.Sprintf("时间: %s", time.Now().Format("15:04:05")))
 	for k, v := range data {
 		description.WriteString(fmt.Sprintf("\n%s: %v", k, v))
 	}
 
-	// 核心逻辑：随机老婆 API + 纳秒级去缓存
 	picURL := conf.PhotoURL
 	if picURL == "" {
-		// 默认使用国内加速二次元接口，拼接纳秒级随机数
 		picURL = fmt.Sprintf("https://api.vvhan.com/api/wallpaper/acg?rand=%d", time.Now().UnixNano())
 	} else {
-		// 如果用户填写了自定义 API，强制追加随机参数防止微信缓存旧图
 		connector := "?"
 		if strings.Contains(picURL, "?") { connector = "&" }
 		picURL = fmt.Sprintf("%s%sv=%d", picURL, connector, time.Now().UnixNano())
@@ -256,27 +233,15 @@ func pushToWeChat(conf Config, data map[string]interface{}) {
 			}},
 		},
 	}
-
 	body, _ := json.Marshal(payload)
-	url := fmt.Sprintf("%s/cgi-bin/message/send?access_token=%s", baseURL, token)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	if err == nil {
-		defer resp.Body.Close()
-		resBody, _ := io.ReadAll(resp.Body)
-		log.Printf("[WeChat] 发送回执: %s", string(resBody))
-	} else {
-		log.Printf("[WeChat] 网络故障: %v", err)
-	}
+	http.Post(fmt.Sprintf("%s/cgi-bin/message/send?access_token=%s", baseURL, token), "application/json", bytes.NewBuffer(body))
 }
 
 func getWeChatToken(conf Config, baseURL string) string {
-	if accessToken != "" && accessTokenExpiresAt > time.Now().Unix() {
-		return accessToken
-	}
+	if accessToken != "" && accessTokenExpiresAt > time.Now().Unix() { return accessToken }
 	resp, err := http.Get(fmt.Sprintf("%s/cgi-bin/gettoken?corpid=%s&corpsecret=%s", baseURL, conf.CorpID, conf.CorpSecret))
 	if err != nil { return "" }
 	defer resp.Body.Close()
-
 	var res struct {
 		Token string `json:"access_token"`
 		Exp   int64  `json:"expires_in"`
