@@ -59,7 +59,6 @@ func main() {
 		adminPass = "admin"
 	}
 
-	// 路由设置
 	r.GET("/login", func(c *gin.Context) {
 		if checkCookie(c) {
 			c.Redirect(http.StatusFound, "/")
@@ -98,7 +97,7 @@ func main() {
 		auth.POST("/save", handleSave)
 	}
 
-	log.Printf("NAS Webhook %s 启动于 :5080", Version)
+	log.Printf("NAS Webhook %s Started", Version)
 	r.Run(":5080")
 }
 
@@ -182,21 +181,15 @@ func handleMessage(c *gin.Context) {
 
 func pushToWeChat(conf Config, data map[string]interface{}) {
 	baseURL := "https://qyapi.weixin.qq.com"
-	if conf.ProxyURL != "" {
-		baseURL = conf.ProxyURL
-	}
+	if conf.ProxyURL != "" { baseURL = conf.ProxyURL }
 
 	token := getWeChatToken(conf, baseURL)
-	if token == "" {
-		return
-	}
+	if token == "" { return }
 
-	content := "收到来自 NAS 的通知"
-	if m, ok := data["message"].(string); ok {
-		content = m
-	} else if t, ok := data["text"].(string); ok {
-		content = t
-	}
+	// 智能解析内容
+	content := "NAS 系统通知"
+	if m, ok := data["message"].(string); ok { content = m }
+	if t, ok := data["text"].(string); ok { content = t }
 
 	picURL := conf.PhotoURL
 	if picURL == "" {
@@ -210,8 +203,8 @@ func pushToWeChat(conf Config, data map[string]interface{}) {
 		"agentid": agentID,
 		"news": map[string]interface{}{
 			"articles": []map[string]interface{}{{
-				"title":       "NAS 系统通知",
-				"description": fmt.Sprintf("时间: %s\n内容: %s", time.Now().Format("2006-01-02 15:04:05"), content),
+				"title":       "NAS 通知中心",
+				"description": fmt.Sprintf("时间: %s\n内容: %s", time.Now().Format("15:04:05"), content),
 				"url":         conf.NasURL,
 				"picurl":      picURL,
 			}},
@@ -227,9 +220,7 @@ func getWeChatToken(conf Config, baseURL string) string {
 		return accessToken
 	}
 	resp, err := http.Get(fmt.Sprintf("%s/cgi-bin/gettoken?corpid=%s&corpsecret=%s", baseURL, conf.CorpID, conf.CorpSecret))
-	if err != nil {
-		return ""
-	}
+	if err != nil { return "" }
 	var res struct {
 		Token string `json:"access_token"`
 		Exp   int64  `json:"expires_in"`
